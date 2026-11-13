@@ -8,10 +8,21 @@
   </head>
   <body>
     <header class="db-header">
-      <div>
-        <h1>Panel de Base de Datos</h1>
-        <p>Gestión segura y consulta SQL de solo lectura</p>
+      <div class="db-brand-block">
+        <div class="db-logo-wrap">
+          <img src="/img/sqlite-logo.svg" alt="Logo SQLite" class="db-logo" />
+        </div>
+        <div class="db-brand-copy">
+          <span class="db-brand-name">SQLite</span>
+          <small>Database Browser</small>
+        </div>
       </div>
+
+      <nav class="db-nav" aria-label="Navegación de base de datos">
+        <a href="/panel-administrativo">Administración</a>
+        <a href="/">Tienda</a>
+      </nav>
+
       <div class="db-actions">
         <a href="/panel-administrativo" class="btn btn-primary">Volver al panel</a>
         <button id="cerrar-sesion" class="btn btn-secondary">Cerrar sesión</button>
