@@ -6,6 +6,8 @@ const listadoCompras = document.getElementById('listado-compras');
 const listadoVentas = document.getElementById('listado-ventas');
 const listadoMovimientos = document.getElementById('listado-movimientos');
 const searchProductos = document.getElementById('search-productos');
+const searchFacturas = document.getElementById('search-facturas');
+const saldoCaja = document.getElementById('saldo-caja');
 const usuarioActual = document.getElementById('usuario-actual');
 const cerrarSesion = document.getElementById('cerrar-sesion');
 
@@ -82,31 +84,63 @@ function renderSelectProductos() {
 }
 
 async function cargarFacturas() {
-  const compras = await apiFetch('/api/facturas-compra');
-  const ventas = await apiFetch('/api/facturas-venta');
+  const compras = await apiFetch(`/api/facturas-compra?q=${encodeURIComponent(searchFacturas.value.trim())}`);
+  const ventas = await apiFetch(`/api/facturas-venta?q=${encodeURIComponent(searchFacturas.value.trim())}`);
   const movimientos = await apiFetch('/api/movimientos');
+  const caja = await apiFetch('/api/caja/saldo');
   state.compras = compras.facturas || [];
   state.ventas = ventas.facturas || [];
   state.movimientos = movimientos.movimientos || [];
+  saldoCaja.textContent = `Saldo: ${formatearPrecio(caja.saldo_actual)}`;
   renderFacturas();
 }
 
 function renderFacturas() {
-  listadoCompras.innerHTML = state.compras.map((factura) => {
+  const termino = (searchFacturas.value || '').trim().toLowerCase();
+
+  const comprasFiltradas = state.compras.filter((factura) => {
+    if (!termino) return true;
+    const producto = state.productos.find((item) => Number(item.id_producto) === Number(factura.id_producto));
+    const texto = [
+      String(factura.id_factura),
+      producto ? producto.nombre : '',
+      String(factura.proveedor || ''),
+      String(factura.metodo_pago || ''),
+      String(factura.fecha || '')
+    ].join(' ').toLowerCase();
+    return texto.includes(termino);
+  });
+
+  const ventasFiltradas = state.ventas.filter((factura) => {
+    if (!termino) return true;
+    const producto = state.productos.find((item) => Number(item.id_producto) === Number(factura.id_producto));
+    const texto = [
+      String(factura.id_factura),
+      producto ? producto.nombre : '',
+      String(factura.nombre_cliente || ''),
+      String(factura.metodo_pago || ''),
+      String(factura.fecha || '')
+    ].join(' ').toLowerCase();
+    return texto.includes(termino);
+  });
+
+  listadoCompras.innerHTML = comprasFiltradas.map((factura) => {
     const producto = state.productos.find((item) => Number(item.id_producto) === Number(factura.id_producto));
     return `
       <tr>
         <td>${factura.id_factura}</td>
         <td>${producto ? producto.nombre : factura.id_producto}</td>
+        <td>${factura.proveedor || 'Proveedor general'}</td>
         <td>${factura.cantidad_comprada}</td>
         <td>${formatearPrecio(factura.precio_unitario)}</td>
         <td>${formatearPrecio(factura.total_compra)}</td>
+        <td>${factura.metodo_pago || 'efectivo'}</td>
         <td>${new Date(factura.fecha).toLocaleString('es-DO')}</td>
       </tr>
     `;
   }).join('');
 
-  listadoVentas.innerHTML = state.ventas.map((factura) => {
+  listadoVentas.innerHTML = ventasFiltradas.map((factura) => {
     const producto = state.productos.find((item) => Number(item.id_producto) === Number(factura.id_producto));
     return `
       <tr>
@@ -115,7 +149,8 @@ function renderFacturas() {
         <td>${factura.cantidad_vendida}</td>
         <td>${formatearPrecio(factura.precio_unitario)}</td>
         <td>${formatearPrecio(factura.total_venta)}</td>
-        <td>${factura.id_usuario}</td>
+        <td>${factura.nombre_cliente || factura.id_usuario}</td>
+        <td>${factura.metodo_pago || 'efectivo'}</td>
         <td>${new Date(factura.fecha).toLocaleString('es-DO')}</td>
       </tr>
     `;
@@ -228,6 +263,9 @@ async function registrarVenta(event) {
 }
 
 searchProductos.addEventListener('input', () => renderProductos());
+searchFacturas.addEventListener('input', async () => {
+  await cargarFacturas();
+});
 formProducto.addEventListener('submit', guardarProducto);
 document.getElementById('reset-producto').addEventListener('click', () => {
   formProducto.reset();

@@ -29,7 +29,7 @@ describe('API de inventario', () => {
     const compra = await agent.post('/api/compras').send({ id_producto: 1, cantidad_comprada: 5, precio_unitario: 5000 });
     expect(compra.statusCode).toBe(201);
 
-    const venta = await agent.post('/api/ventas').send({ id_producto: 1, cantidad: 3, precio_unitario: 8000 });
+    const venta = await agent.post('/api/ventas').send({ id_producto: 1, cantidad: 3, precio_unitario: 9800 });
     expect(venta.statusCode).toBe(201);
 
     const despues = await agent.get('/api/productos/1');
@@ -40,7 +40,7 @@ describe('API de inventario', () => {
     const agent = request.agent(app);
     await agent.post('/api/auth/login').send({ usuario: 'Admin', contrasena: 'Admin' });
 
-    const venta = await agent.post('/api/ventas').send({ id_producto: 1, cantidad: 99999, precio_unitario: 1000 });
+    const venta = await agent.post('/api/ventas').send({ id_producto: 1, cantidad: 99999, precio_unitario: 9800 });
     expect(venta.statusCode).toBe(400);
     expect(venta.body.error).toBe('Inventario insuficiente');
   });

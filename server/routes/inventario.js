@@ -154,12 +154,18 @@ router.delete('/productos/:id', requiereAdmin, async (req, res) => {
 
 router.post('/compras', requiereAdmin, async (req, res) => {
   try {
-    const idProducto = Number(req.body.id_producto);
+    const inputIdProducto = Number(req.body.id_producto);
+    const idProducto = Number.isFinite(inputIdProducto) && inputIdProducto > 0 ? inputIdProducto : null;
     const cantidadComprada = Number(req.body.cantidad_comprada);
     const precioUnitario = Number(req.body.precio_unitario);
+    const proveedor = String(req.body.proveedor || '').trim() || 'Proveedor general';
+    const metodoPago = String(req.body.metodo_pago || 'efectivo').trim().toLowerCase();
+    const nombreProducto = String(req.body.nombre || '').trim();
+    const descripcionProducto = String(req.body.descripcion || '').trim();
+    let precioVenta = Number(req.body.precio_venta ?? NaN);
 
-    if (!Number.isInteger(idProducto) || idProducto <= 0) {
-      return res.status(400).json({ error: 'Producto inválido.' });
+    if (!['efectivo', 'transferencia', 'tarjeta', 'cheque'].includes(metodoPago)) {
+      return res.status(400).json({ error: 'El método de pago no es válido.' });
     }
     if (!Number.isInteger(cantidadComprada) || cantidadComprada <= 0) {
       return res.status(400).json({ error: 'La cantidad comprada debe ser un entero mayor que 0.' });
@@ -168,28 +174,51 @@ router.post('/compras', requiereAdmin, async (req, res) => {
       return res.status(400).json({ error: 'El precio unitario debe ser válido.' });
     }
 
-    const producto = await get('SELECT * FROM productos WHERE id_producto = ? AND activo = 1', [idProducto]);
+    let producto = idProducto ? await get('SELECT * FROM productos WHERE id_producto = ? AND activo = 1', [idProducto]) : null;
+    let productoId = idProducto;
+
     if (!producto) {
-      return res.status(404).json({ error: 'Producto no encontrado.' });
+      if (!nombreProducto) {
+        return res.status(400).json({ error: 'Debes indicar el nombre del producto si no existe en el catálogo.' });
+      }
+      const ultimo = await get('SELECT MAX(id_producto) AS max_id FROM productos');
+      productoId = (ultimo?.max_id || 0) + 1;
+      precioVenta = Number(req.body.precio_venta ?? precioUnitario);
+      await run(
+        'INSERT INTO productos (id_producto, nombre, descripcion, precio_compra, precio_venta, stock_disponible, imagen, activo) VALUES (?, ?, ?, ?, ?, ?, "/img/logo-dazi-solar.svg", 1)',
+        [productoId, nombreProducto, descripcionProducto, precioUnitario, precioVenta, 0]
+      );
+      producto = { id_producto: productoId, precio_venta: precioVenta };
+    } else {
+      precioVenta = Number(req.body.precio_venta ?? producto.precio_venta ?? precioUnitario);
+    }
+
+    if (!Number.isFinite(precioVenta) || precioVenta < 0) {
+      return res.status(400).json({ error: 'El precio de venta debe ser válido.' });
     }
 
     const totalCompra = cantidadComprada * precioUnitario;
 
     await withTransaction(async () => {
       const factura = await run(
-        'INSERT INTO facturas_compra (id_producto, cantidad_comprada, precio_unitario, total_compra) VALUES (?, ?, ?, ?)',
-        [idProducto, cantidadComprada, precioUnitario, totalCompra]
+        'INSERT INTO facturas_compra (id_producto, cantidad_comprada, precio_unitario, total_compra, proveedor, metodo_pago) VALUES (?, ?, ?, ?, ?, ?)',
+        [productoId, cantidadComprada, precioUnitario, totalCompra, proveedor, metodoPago]
       );
 
       await run(
         'INSERT INTO movimientos_inventario (id_producto, cantidad, tipo_movimiento, id_factura, origen) VALUES (?, ?, ?, ?, ?)',
-        [idProducto, cantidadComprada, 'Entrada', factura.lastID, 'compra']
+        [productoId, cantidadComprada, 'Entrada', factura.lastID, 'compra']
       );
 
       await run(
-        'UPDATE productos SET stock_disponible = stock_disponible + ? WHERE id_producto = ?',
-        [cantidadComprada, idProducto]
+        'UPDATE productos SET stock_disponible = stock_disponible + ?, precio_compra = ?, precio_venta = ? WHERE id_producto = ?',
+        [cantidadComprada, precioUnitario, precioVenta, productoId]
       );
+
+      await run(
+        'INSERT INTO caja (id, saldo_actual) VALUES (1, 0) ON CONFLICT(id) DO NOTHING'
+      );
+      await run('UPDATE caja SET saldo_actual = saldo_actual - ? WHERE id = 1', [totalCompra]);
     });
 
     return res.status(201).json({ mensaje: 'Compra registrada correctamente.' });
@@ -206,22 +235,28 @@ router.post('/ventas', async (req, res) => {
 
     const idProducto = Number(req.body.id_producto);
     const cantidadVendida = Number(req.body.cantidad);
-    const precioUnitario = Number(req.body.precio_unitario || req.body.precio_venta || 0);
     const usuarioId = req.session.userId;
+    const metodoPago = String(req.body.metodo_pago || 'efectivo').trim().toLowerCase();
 
+    if (!['efectivo', 'transferencia', 'tarjeta', 'cheque'].includes(metodoPago)) {
+      return res.status(400).json({ error: 'El método de pago no es válido.' });
+    }
     if (!Number.isInteger(idProducto) || idProducto <= 0) {
       return res.status(400).json({ error: 'Producto inválido.' });
     }
     if (!Number.isInteger(cantidadVendida) || cantidadVendida <= 0) {
       return res.status(400).json({ error: 'La cantidad debe ser un entero mayor que 0.' });
     }
-    if (!Number.isFinite(precioUnitario) || precioUnitario < 0) {
-      return res.status(400).json({ error: 'El precio unitario debe ser válido.' });
-    }
-
     const producto = await get('SELECT * FROM productos WHERE id_producto = ? AND activo = 1', [idProducto]);
     if (!producto) {
       return res.status(404).json({ error: 'Producto no encontrado.' });
+    }
+
+    const precioSolicitado = Number(req.body.precio_unitario ?? req.body.precio_venta);
+    const precioUnitario = Number(producto.precio_venta);
+
+    if (Number.isFinite(precioSolicitado) && precioSolicitado !== precioUnitario) {
+      return res.status(400).json({ error: 'El precio de venta debe coincidir con el precio registrado del producto.' });
     }
 
     if (cantidadVendida > producto.stock_disponible) {
@@ -232,8 +267,8 @@ router.post('/ventas', async (req, res) => {
 
     const resultado = await withTransaction(async () => {
       const factura = await run(
-        'INSERT INTO facturas_venta (id_producto, cantidad_vendida, precio_unitario, total_venta, id_usuario) VALUES (?, ?, ?, ?, ?)',
-        [idProducto, cantidadVendida, precioUnitario, totalVenta, usuarioId]
+        'INSERT INTO facturas_venta (id_producto, cantidad_vendida, precio_unitario, total_venta, id_usuario, metodo_pago) VALUES (?, ?, ?, ?, ?, ?)',
+        [idProducto, cantidadVendida, precioUnitario, totalVenta, usuarioId, metodoPago]
       );
 
       await run(
@@ -246,6 +281,11 @@ router.post('/ventas', async (req, res) => {
         [cantidadVendida, idProducto]
       );
 
+      await run(
+        'INSERT INTO caja (id, saldo_actual) VALUES (1, 0) ON CONFLICT(id) DO NOTHING'
+      );
+      await run('UPDATE caja SET saldo_actual = saldo_actual + ? WHERE id = 1', [totalVenta]);
+
       return factura.lastID;
     });
 
@@ -255,14 +295,52 @@ router.post('/ventas', async (req, res) => {
   }
 });
 
-router.get('/facturas-compra', requiereAdmin, async (_req, res) => {
-  const facturas = await all('SELECT * FROM facturas_compra ORDER BY id_factura DESC');
+router.get('/facturas-compra', requiereAdmin, async (req, res) => {
+  const busqueda = String(req.query.q || '').trim();
+  let sql = `
+    SELECT fc.*, p.nombre AS nombre_producto
+    FROM facturas_compra fc
+    LEFT JOIN productos p ON p.id_producto = fc.id_producto
+    WHERE 1 = 1
+  `;
+  const params = [];
+
+  if (busqueda) {
+    sql += ' AND (CAST(fc.id_factura AS TEXT) LIKE ? OR p.nombre LIKE ? OR fc.proveedor LIKE ? OR fc.metodo_pago LIKE ? OR DATE(fc.fecha) LIKE ?)';
+    const valor = `%${busqueda}%`;
+    params.push(valor, valor, valor, valor, valor);
+  }
+
+  sql += ' ORDER BY fc.id_factura DESC';
+  const facturas = await all(sql, params);
   return res.json({ facturas });
 });
 
-router.get('/facturas-venta', requiereAdmin, async (_req, res) => {
-  const facturas = await all('SELECT * FROM facturas_venta ORDER BY id_factura DESC');
+router.get('/facturas-venta', requiereAdmin, async (req, res) => {
+  const busqueda = String(req.query.q || '').trim();
+  let sql = `
+    SELECT fv.*, p.nombre AS nombre_producto, u.usuario AS nombre_cliente
+    FROM facturas_venta fv
+    LEFT JOIN productos p ON p.id_producto = fv.id_producto
+    LEFT JOIN usuarios u ON u.id_usuario = fv.id_usuario
+    WHERE 1 = 1
+  `;
+  const params = [];
+
+  if (busqueda) {
+    sql += ' AND (CAST(fv.id_factura AS TEXT) LIKE ? OR p.nombre LIKE ? OR u.usuario LIKE ? OR fv.metodo_pago LIKE ? OR DATE(fv.fecha) LIKE ?)';
+    const valor = `%${busqueda}%`;
+    params.push(valor, valor, valor, valor, valor);
+  }
+
+  sql += ' ORDER BY fv.id_factura DESC';
+  const facturas = await all(sql, params);
   return res.json({ facturas });
+});
+
+router.get('/caja/saldo', requiereAdmin, async (_req, res) => {
+  const saldo = await get('SELECT saldo_actual FROM caja WHERE id = 1');
+  return res.json({ saldo_actual: Number(saldo?.saldo_actual || 0) });
 });
 
 router.get('/movimientos', requiereAdmin, async (_req, res) => {

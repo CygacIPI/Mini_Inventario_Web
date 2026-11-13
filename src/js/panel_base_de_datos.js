@@ -130,23 +130,42 @@ async function cargarUsuarios() {
   try {
     const data = await apiFetch('/api/auth/usuarios');
     const rows = data.usuarios || [];
-    usuariosTabla.innerHTML = rows.map((usuario) => `
-      <tr>
-        <td>${usuario.id_usuario}</td>
-        <td>${usuario.usuario}</td>
-        <td>${usuario.rol}</td>
-        <td>${new Date(usuario.fecha_creacion).toLocaleString('es-DO')}</td>
-        <td>
-          <button class="action-btn" data-cambiar-rol="${usuario.id_usuario}" data-rol="${usuario.rol === 'admin' ? 'cliente' : 'admin'}">${usuario.rol === 'admin' ? 'Cliente' : 'Admin'}</button>
-          <button class="action-btn delete" data-eliminar-usuario="${usuario.id_usuario}">Eliminar</button>
-        </td>
-      </tr>
-    `).join('');
+    usuariosTabla.innerHTML = '';
 
-    usuariosTabla.querySelectorAll('[data-cambiar-rol]').forEach((boton) => {
-      boton.addEventListener('click', async () => {
-        const id = Number(boton.dataset.cambiarRol);
-        const rol = boton.dataset.rol;
+    rows.forEach((usuario) => {
+      const fila = document.createElement('tr');
+      const celdaId = document.createElement('td');
+      const celdaUsuario = document.createElement('td');
+      const celdaRol = document.createElement('td');
+      const celdaFecha = document.createElement('td');
+      const celdaAcciones = document.createElement('td');
+
+      celdaId.textContent = String(usuario.id_usuario);
+      celdaUsuario.textContent = String(usuario.usuario);
+      celdaRol.textContent = String(usuario.rol);
+      celdaFecha.textContent = new Date(usuario.fecha_creacion).toLocaleString('es-DO');
+
+      const botonRol = document.createElement('button');
+      botonRol.className = 'action-btn';
+      botonRol.type = 'button';
+      botonRol.dataset.cambiarRol = String(usuario.id_usuario);
+      botonRol.dataset.rol = usuario.rol === 'admin' ? 'cliente' : 'admin';
+      botonRol.textContent = usuario.rol === 'admin' ? 'Cliente' : 'Admin';
+
+      const botonEliminar = document.createElement('button');
+      botonEliminar.className = 'action-btn delete';
+      botonEliminar.type = 'button';
+      botonEliminar.dataset.eliminarUsuario = String(usuario.id_usuario);
+      botonEliminar.textContent = 'Eliminar';
+
+      celdaAcciones.appendChild(botonRol);
+      celdaAcciones.appendChild(botonEliminar);
+      fila.append(celdaId, celdaUsuario, celdaRol, celdaFecha, celdaAcciones);
+      usuariosTabla.appendChild(fila);
+
+      botonRol.addEventListener('click', async () => {
+        const id = Number(botonRol.dataset.cambiarRol);
+        const rol = botonRol.dataset.rol;
         try {
           await apiFetch(`/api/auth/usuarios/${id}`, {
             method: 'PUT',
@@ -157,17 +176,17 @@ async function cargarUsuarios() {
           alert(error.message);
         }
       });
-    });
 
-    usuariosTabla.querySelectorAll('[data-eliminar-usuario]').forEach((boton) => {
-      boton.addEventListener('click', async () => {
-        const id = Number(boton.dataset.eliminarUsuario);
+      botonEliminar.addEventListener('click', async () => {
+        const id = Number(botonEliminar.dataset.eliminarUsuario);
         try {
           await apiFetch(`/api/auth/usuarios/${id}`, { method: 'DELETE' });
           await cargarUsuarios();
         } catch (error) {
           alert(error.message);
         }
+      });
+    });
       });
     });
   } catch (_error) {

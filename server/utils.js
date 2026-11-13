@@ -16,7 +16,7 @@ function calcularStockTrasVenta(stockActual, cantidadVendida) {
 
 function esUsuarioValido(usuario) {
   const valor = String(usuario || '').trim();
-  return valor.length >= 4 && valor.length <= 30;
+  return /^[a-zA-Z0-9._-]{4,30}$/.test(valor);
 }
 
 function esContrasenaValida(contrasena) {

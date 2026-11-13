@@ -86,6 +86,8 @@ async function initializeDatabase() {
       precio_unitario REAL NOT NULL CHECK(precio_unitario >= 0),
       total_compra REAL NOT NULL CHECK(total_compra >= 0),
       tipo_movimiento TEXT NOT NULL DEFAULT 'Entrada' CHECK(tipo_movimiento = 'Entrada'),
+      proveedor TEXT NOT NULL DEFAULT 'Proveedor general',
+      metodo_pago TEXT NOT NULL DEFAULT 'efectivo' CHECK(metodo_pago IN ('efectivo', 'transferencia', 'tarjeta', 'cheque')),
       FOREIGN KEY(id_producto) REFERENCES productos(id_producto)
     )`,
     `CREATE TABLE IF NOT EXISTS facturas_venta (
@@ -97,6 +99,7 @@ async function initializeDatabase() {
       total_venta REAL NOT NULL CHECK(total_venta >= 0),
       tipo_movimiento TEXT NOT NULL DEFAULT 'Salida' CHECK(tipo_movimiento = 'Salida'),
       id_usuario INTEGER NOT NULL,
+      metodo_pago TEXT NOT NULL DEFAULT 'efectivo' CHECK(metodo_pago IN ('efectivo', 'transferencia', 'tarjeta', 'cheque')),
       FOREIGN KEY(id_producto) REFERENCES productos(id_producto),
       FOREIGN KEY(id_usuario) REFERENCES usuarios(id_usuario)
     )`,
@@ -109,6 +112,10 @@ async function initializeDatabase() {
       id_factura INTEGER,
       origen TEXT NOT NULL CHECK(origen IN ('compra', 'venta')),
       FOREIGN KEY(id_producto) REFERENCES productos(id_producto)
+    )`,
+    `CREATE TABLE IF NOT EXISTS caja (
+      id INTEGER PRIMARY KEY CHECK(id = 1),
+      saldo_actual REAL NOT NULL DEFAULT 0
     )`
   ];
 
@@ -116,12 +123,41 @@ async function initializeDatabase() {
     await run(statement);
   }
 
-  const usuarioAdmin = await get('SELECT id_usuario FROM usuarios WHERE usuario = ?', ['Admin']);
+  const columnasCompra = await all('PRAGMA table_info(facturas_compra)');
+  const columnasVenta = await all('PRAGMA table_info(facturas_venta)');
+  const columnasCaja = await all('PRAGMA table_info(caja)');
+
+  if (!columnasCompra.some((columna) => columna.name === 'proveedor')) {
+    await run('ALTER TABLE facturas_compra ADD COLUMN proveedor TEXT NOT NULL DEFAULT "Proveedor general"');
+  }
+  if (!columnasCompra.some((columna) => columna.name === 'metodo_pago')) {
+    await run('ALTER TABLE facturas_compra ADD COLUMN metodo_pago TEXT NOT NULL DEFAULT "efectivo"');
+  }
+  if (!columnasVenta.some((columna) => columna.name === 'metodo_pago')) {
+    await run('ALTER TABLE facturas_venta ADD COLUMN metodo_pago TEXT NOT NULL DEFAULT "efectivo"');
+  }
+  if (columnasCaja.length === 0) {
+    await run('INSERT INTO caja (id, saldo_actual) VALUES (1, 0)');
+  } else {
+    const saldoActual = await get('SELECT saldo_actual FROM caja WHERE id = 1');
+    if (!saldoActual) {
+      await run('INSERT INTO caja (id, saldo_actual) VALUES (1, 0)');
+    }
+  }
+
+  const usuarioAdminNombre = process.env.ADMIN_USERNAME;
+  const usuarioAdminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!usuarioAdminNombre || !usuarioAdminPassword) {
+    throw new Error('Faltan las variables ADMIN_USERNAME y ADMIN_PASSWORD en el entorno. Configúralas en .env antes de arrancar la aplicación.');
+  }
+
+  const usuarioAdmin = await get('SELECT id_usuario FROM usuarios WHERE usuario = ?', [usuarioAdminNombre]);
   if (!usuarioAdmin) {
-    const hash = await bcrypt.hash('Admin', 10);
+    const hash = await bcrypt.hash(usuarioAdminPassword, 10);
     await run(
       'INSERT INTO usuarios (usuario, contrasena_hash, rol) VALUES (?, ?, ?)',
-      ['Admin', hash, 'admin']
+      [usuarioAdminNombre, hash, 'admin']
     );
   }
 

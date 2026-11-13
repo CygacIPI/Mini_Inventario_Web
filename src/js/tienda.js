@@ -134,8 +134,7 @@ async function comprarProducto(idProducto, cantidad) {
       method: 'POST',
       body: JSON.stringify({
         id_producto: Number(idProducto),
-        cantidad,
-        precio_unitario: Number(producto.precio_venta)
+        cantidad
       })
     });
     alert(`Compra realizada correctamente. Factura: ${respuesta.facturaId}`);

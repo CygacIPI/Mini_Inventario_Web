@@ -5,13 +5,13 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 
+dotenv.config();
+
 const { initializeDatabase, get } = require('./db');
 const authRoutes = require('./routes/auth');
 const inventarioRoutes = require('./routes/inventario');
 const bdRoutes = require('./routes/bd');
 const { cargarUsuarioSesion } = require('./middleware/auth');
-
-dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;

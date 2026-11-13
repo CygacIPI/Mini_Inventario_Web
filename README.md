@@ -8,8 +8,14 @@ Esta aplicación simula una tienda de energía solar con catálogo de productos,
 
 ## Usuario administrador inicial
 
-Usuario: `Admin`
-Contraseña: `Admin`
+El usuario administrador se configura con variables de entorno y no debe quedar hardcodeado en el código fuente.
+
+Ejemplo en `.env`:
+
+```env
+ADMIN_USERNAME=Admin
+ADMIN_PASSWORD=ChangeMeStrongly!
+```
 
 Nota: este usuario es solo para desarrollo. En un entorno real debe cambiarse la contraseña y se recomienda crear un usuario distinto con permisos restringidos.
 
@@ -49,6 +55,8 @@ npm run test:smoke
 - `NODE_ENV`: entorno de ejecución.
 - `SESSION_SECRET`: secreto de sesión.
 - `DB_PATH`: ruta de la base de datos SQLite.
+- `ADMIN_USERNAME`: nombre del usuario administrador inicial.
+- `ADMIN_PASSWORD`: contraseña del usuario administrador inicial.
 
 ## Estructura principal
 
