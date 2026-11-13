@@ -7,7 +7,7 @@ const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'database', 'da
 const dbDir = path.dirname(dbPath);
 fs.mkdirSync(dbDir, { recursive: true });
 
-const db = new sqlite3.Database(dbPath);
+let db = new sqlite3.Database(dbPath);
 
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -57,10 +57,31 @@ async function withTransaction(operation) {
   }
 }
 
-async function initializeDatabase() {
-  await run('PRAGMA foreign_keys = ON');
+async function resetDatabaseForRepair() {
+  if (db) {
+    await new Promise((resolve, reject) => {
+      db.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
 
-  const schema = [
+  if (fs.existsSync(dbPath)) {
+    fs.unlinkSync(dbPath);
+  }
+
+  db = new sqlite3.Database(dbPath);
+}
+
+async function initializeDatabase() {
+  try {
+    await run('PRAGMA foreign_keys = ON');
+
+    const schema = [
     `CREATE TABLE IF NOT EXISTS usuarios (
       id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
       usuario TEXT UNIQUE NOT NULL,
@@ -119,51 +140,51 @@ async function initializeDatabase() {
     )`
   ];
 
-  for (const statement of schema) {
-    await run(statement);
-  }
-
-  const columnasCompra = await all('PRAGMA table_info(facturas_compra)');
-  const columnasVenta = await all('PRAGMA table_info(facturas_venta)');
-  const columnasCaja = await all('PRAGMA table_info(caja)');
-
-  if (!columnasCompra.some((columna) => columna.name === 'proveedor')) {
-    await run('ALTER TABLE facturas_compra ADD COLUMN proveedor TEXT NOT NULL DEFAULT "Proveedor general"');
-  }
-  if (!columnasCompra.some((columna) => columna.name === 'metodo_pago')) {
-    await run('ALTER TABLE facturas_compra ADD COLUMN metodo_pago TEXT NOT NULL DEFAULT "efectivo"');
-  }
-  if (!columnasVenta.some((columna) => columna.name === 'metodo_pago')) {
-    await run('ALTER TABLE facturas_venta ADD COLUMN metodo_pago TEXT NOT NULL DEFAULT "efectivo"');
-  }
-  if (columnasCaja.length === 0) {
-    await run('INSERT INTO caja (id, saldo_actual) VALUES (1, 0)');
-  } else {
-    const saldoActual = await get('SELECT saldo_actual FROM caja WHERE id = 1');
-    if (!saldoActual) {
-      await run('INSERT INTO caja (id, saldo_actual) VALUES (1, 0)');
+    for (const statement of schema) {
+      await run(statement);
     }
-  }
 
-  const usuarioAdminNombre = process.env.ADMIN_USERNAME;
-  const usuarioAdminPassword = process.env.ADMIN_PASSWORD;
+    const columnasCompra = await all('PRAGMA table_info(facturas_compra)');
+    const columnasVenta = await all('PRAGMA table_info(facturas_venta)');
+    const columnasCaja = await all('PRAGMA table_info(caja)');
 
-  if (!usuarioAdminNombre || !usuarioAdminPassword) {
-    throw new Error('Faltan las variables ADMIN_USERNAME y ADMIN_PASSWORD en el entorno. Configúralas en .env antes de arrancar la aplicación.');
-  }
+    if (!columnasCompra.some((columna) => columna.name === 'proveedor')) {
+      await run('ALTER TABLE facturas_compra ADD COLUMN proveedor TEXT NOT NULL DEFAULT "Proveedor general"');
+    }
+    if (!columnasCompra.some((columna) => columna.name === 'metodo_pago')) {
+      await run('ALTER TABLE facturas_compra ADD COLUMN metodo_pago TEXT NOT NULL DEFAULT "efectivo"');
+    }
+    if (!columnasVenta.some((columna) => columna.name === 'metodo_pago')) {
+      await run('ALTER TABLE facturas_venta ADD COLUMN metodo_pago TEXT NOT NULL DEFAULT "efectivo"');
+    }
+    if (columnasCaja.length === 0) {
+      await run('INSERT INTO caja (id, saldo_actual) VALUES (1, 0)');
+    } else {
+      const saldoActual = await get('SELECT saldo_actual FROM caja WHERE id = 1');
+      if (!saldoActual) {
+        await run('INSERT INTO caja (id, saldo_actual) VALUES (1, 0)');
+      }
+    }
 
-  const usuarioAdmin = await get('SELECT id_usuario FROM usuarios WHERE usuario = ?', [usuarioAdminNombre]);
-  if (!usuarioAdmin) {
-    const hash = await bcrypt.hash(usuarioAdminPassword, 10);
-    await run(
-      'INSERT INTO usuarios (usuario, contrasena_hash, rol) VALUES (?, ?, ?)',
-      [usuarioAdminNombre, hash, 'admin']
-    );
-  }
+    const usuarioAdminNombre = process.env.ADMIN_USERNAME;
+    const usuarioAdminPassword = process.env.ADMIN_PASSWORD;
 
-  const totalProductos = await get('SELECT COUNT(*) AS total FROM productos');
-  if ((totalProductos?.total || 0) === 0) {
-    const datosProductos = [
+    if (!usuarioAdminNombre || !usuarioAdminPassword) {
+      throw new Error('Faltan las variables ADMIN_USERNAME y ADMIN_PASSWORD en el entorno. Configúralas en .env antes de arrancar la aplicación.');
+    }
+
+    const usuarioAdmin = await get('SELECT id_usuario FROM usuarios WHERE usuario = ?', [usuarioAdminNombre]);
+    if (!usuarioAdmin) {
+      const hash = await bcrypt.hash(usuarioAdminPassword, 10);
+      await run(
+        'INSERT INTO usuarios (usuario, contrasena_hash, rol) VALUES (?, ?, ?)',
+        [usuarioAdminNombre, hash, 'admin']
+      );
+    }
+
+    const totalProductos = await get('SELECT COUNT(*) AS total FROM productos');
+    if ((totalProductos?.total || 0) === 0) {
+      const datosProductos = [
       {
         id_producto: 1,
         nombre: 'Panel Solar Monocristalino 400W',
@@ -271,6 +292,13 @@ async function initializeDatabase() {
         ]
       );
     }
+  }
+  } catch (error) {
+    if (String(error.message).includes('duplicate column name')) {
+      await resetDatabaseForRepair();
+      return initializeDatabase();
+    }
+    throw error;
   }
 }
 
