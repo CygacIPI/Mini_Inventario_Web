@@ -18,6 +18,16 @@ const state = {
   movimientos: []
 };
 
+function escaparHtml(valor) {
+  return String(valor ?? '').replace(/[&<>"']/g, (caracter) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[caracter]);
+}
+
 function formatearPrecio(precio) {
   return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(precio);
 }
@@ -49,6 +59,10 @@ async function cargarProductos() {
   state.productos = respuesta.productos || [];
   renderProductos();
   renderSelectProductos();
+  document.getElementById('stat-productos').textContent = String(state.productos.length);
+  document.getElementById('stat-stock').textContent = String(
+    state.productos.reduce((total, producto) => total + Number(producto.stock_disponible || 0), 0)
+  );
 }
 
 function renderProductos() {
@@ -58,7 +72,7 @@ function renderProductos() {
   tablaProductos.innerHTML = productosFiltrados.map((producto) => `
     <tr>
       <td>${producto.id_producto}</td>
-      <td>${producto.nombre}</td>
+      <td>${escaparHtml(producto.nombre)}</td>
       <td>${producto.stock_disponible}</td>
       <td>${formatearPrecio(producto.precio_venta)}</td>
       <td>
@@ -78,9 +92,15 @@ function renderProductos() {
 }
 
 function renderSelectProductos() {
-  const options = state.productos.map((producto) => `<option value="${producto.id_producto}">${producto.nombre}</option>`).join('');
-  formCompra.elements.id_producto.innerHTML = options;
-  formVenta.elements.id_producto.innerHTML = options;
+  [formCompra.elements.id_producto, formVenta.elements.id_producto].forEach((select) => {
+    select.replaceChildren();
+    state.productos.forEach((producto) => {
+      const option = document.createElement('option');
+      option.value = String(producto.id_producto);
+      option.textContent = producto.nombre;
+      select.appendChild(option);
+    });
+  });
 }
 
 async function cargarFacturas() {
@@ -92,6 +112,8 @@ async function cargarFacturas() {
   state.ventas = ventas.facturas || [];
   state.movimientos = movimientos.movimientos || [];
   saldoCaja.textContent = `Saldo: ${formatearPrecio(caja.saldo_actual)}`;
+  document.getElementById('stat-ventas').textContent = String(state.ventas.length);
+  document.getElementById('stat-caja').textContent = formatearPrecio(caja.saldo_actual);
   renderFacturas();
 }
 
@@ -103,7 +125,7 @@ function renderFacturas() {
     const producto = state.productos.find((item) => Number(item.id_producto) === Number(factura.id_producto));
     const texto = [
       String(factura.id_factura),
-      producto ? producto.nombre : '',
+      producto ? producto.nombre : String(factura.nombre_producto || ''),
       String(factura.proveedor || ''),
       String(factura.metodo_pago || ''),
       String(factura.fecha || '')
@@ -116,7 +138,7 @@ function renderFacturas() {
     const producto = state.productos.find((item) => Number(item.id_producto) === Number(factura.id_producto));
     const texto = [
       String(factura.id_factura),
-      producto ? producto.nombre : '',
+      producto ? producto.nombre : String(factura.nombre_producto || ''),
       String(factura.nombre_cliente || ''),
       String(factura.metodo_pago || ''),
       String(factura.fecha || '')
@@ -129,13 +151,14 @@ function renderFacturas() {
     return `
       <tr>
         <td>${factura.id_factura}</td>
-        <td>${producto ? producto.nombre : factura.id_producto}</td>
-        <td>${factura.proveedor || 'Proveedor general'}</td>
+        <td>${escaparHtml(producto ? producto.nombre : factura.nombre_producto || factura.id_producto)}</td>
+        <td>${escaparHtml(factura.proveedor || 'Proveedor general')}</td>
         <td>${factura.cantidad_comprada}</td>
         <td>${formatearPrecio(factura.precio_unitario)}</td>
         <td>${formatearPrecio(factura.total_compra)}</td>
-        <td>${factura.metodo_pago || 'efectivo'}</td>
+        <td>${escaparHtml(factura.metodo_pago || 'efectivo')}</td>
         <td>${new Date(factura.fecha).toLocaleString('es-DO')}</td>
+        <td><button class="action-btn" type="button" data-imprimir-compra="${factura.id_factura}">Imprimir</button></td>
       </tr>
     `;
   }).join('');
@@ -145,13 +168,16 @@ function renderFacturas() {
     return `
       <tr>
         <td>${factura.id_factura}</td>
-        <td>${producto ? producto.nombre : factura.id_producto}</td>
+        <td>${escaparHtml(producto ? producto.nombre : factura.nombre_producto || factura.id_producto)}</td>
         <td>${factura.cantidad_vendida}</td>
         <td>${formatearPrecio(factura.precio_unitario)}</td>
         <td>${formatearPrecio(factura.total_venta)}</td>
-        <td>${factura.nombre_cliente || factura.id_usuario}</td>
-        <td>${factura.metodo_pago || 'efectivo'}</td>
+        <td>${escaparHtml(factura.nombre_cliente || factura.id_usuario)}</td>
+        <td>${escaparHtml([factura.email_cliente, factura.telefono_cliente].filter(Boolean).join(' · '))}</td>
+        <td>${escaparHtml(factura.direccion_cliente || '')}</td>
+        <td>${escaparHtml(factura.metodo_pago || 'efectivo')}</td>
         <td>${new Date(factura.fecha).toLocaleString('es-DO')}</td>
+        <td><button class="action-btn" type="button" data-imprimir-venta="${factura.id_factura}">Imprimir</button></td>
       </tr>
     `;
   }).join('');
@@ -161,15 +187,29 @@ function renderFacturas() {
     return `
       <tr>
         <td>${mov.id_movimiento}</td>
-        <td>${producto ? producto.nombre : mov.id_producto}</td>
+        <td>${escaparHtml(producto ? producto.nombre : mov.id_producto)}</td>
         <td>${mov.cantidad}</td>
-        <td>${mov.tipo_movimiento}</td>
-        <td>${mov.origen}</td>
+        <td>${escaparHtml(mov.tipo_movimiento)}</td>
+        <td>${escaparHtml(mov.origen)}</td>
         <td>${new Date(mov.fecha).toLocaleString('es-DO')}</td>
       </tr>
     `;
   }).join('');
 }
+
+listadoCompras.addEventListener('click', (event) => {
+  const boton = event.target.closest('[data-imprimir-compra]');
+  if (!boton) return;
+  const factura = state.compras.find((item) => Number(item.id_factura) === Number(boton.dataset.imprimirCompra));
+  if (factura) window.facturasUI.mostrar(factura, 'compra');
+});
+
+listadoVentas.addEventListener('click', (event) => {
+  const boton = event.target.closest('[data-imprimir-venta]');
+  if (!boton) return;
+  const factura = state.ventas.find((item) => Number(item.id_factura) === Number(boton.dataset.imprimirVenta));
+  if (factura) window.facturasUI.mostrar(factura, 'venta');
+});
 
 async function guardarProducto(event) {
   event.preventDefault();
@@ -191,9 +231,9 @@ async function guardarProducto(event) {
     document.querySelector('input[name="id_producto"]').value = '';
     await cargarProductos();
     await cargarFacturas();
-    alert('Producto guardado correctamente.');
+    window.appUI.notify('Producto guardado correctamente.', 'success');
   } catch (error) {
-    alert(error.message || 'No se pudo guardar el producto.');
+    window.appUI.notify(error.message || 'No se pudo guardar el producto.', 'error');
   }
 }
 
@@ -210,15 +250,21 @@ async function editarProducto(idProducto) {
 }
 
 async function eliminarProducto(idProducto) {
-  if (!confirm('¿Deseas eliminar este producto lógicamente?')) return;
+  const confirmado = await window.appUI.confirm({
+    title: 'Desactivar producto',
+    message: 'El producto dejará de mostrarse en la tienda, pero se conservará su historial.',
+    confirmText: 'Desactivar',
+    danger: true
+  });
+  if (!confirmado) return;
 
   try {
     await apiFetch(`/api/productos/${idProducto}`, { method: 'DELETE' });
     await cargarProductos();
     await cargarFacturas();
-    alert('Producto eliminado.');
+    window.appUI.notify('Producto desactivado correctamente.', 'success');
   } catch (error) {
-    alert(error.message || 'No se pudo eliminar el producto.');
+    window.appUI.notify(error.message || 'No se pudo eliminar el producto.', 'error');
   }
 }
 
@@ -236,9 +282,9 @@ async function registrarCompra(event) {
     formCompra.reset();
     await cargarProductos();
     await cargarFacturas();
-    alert('Compra registrada correctamente.');
+    window.appUI.notify('Compra registrada correctamente.', 'success');
   } catch (error) {
-    alert(error.message || 'No se pudo registrar la compra.');
+    window.appUI.notify(error.message || 'No se pudo registrar la compra.', 'error');
   }
 }
 
@@ -256,9 +302,9 @@ async function registrarVenta(event) {
     formVenta.reset();
     await cargarProductos();
     await cargarFacturas();
-    alert('Venta registrada correctamente.');
+    window.appUI.notify('Venta registrada correctamente.', 'success');
   } catch (error) {
-    alert(error.message || 'No se pudo registrar la venta.');
+    window.appUI.notify(error.message || 'No se pudo registrar la venta.', 'error');
   }
 }
 
@@ -276,15 +322,19 @@ formVenta.addEventListener('submit', registrarVenta);
 
 cerrarSesion.addEventListener('click', async () => {
   try {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await apiFetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/';
-  } catch (_error) {
-    alert('No se pudo cerrar la sesión.');
+  } catch (error) {
+    window.appUI.notify(error.message || 'No se pudo cerrar la sesión.', 'error');
   }
 });
 
 (async function init() {
-  await cargarUsuario();
-  await cargarProductos();
-  await cargarFacturas();
+  try {
+    await cargarUsuario();
+    await cargarProductos();
+    await cargarFacturas();
+  } catch (error) {
+    window.appUI.notify(error.message || 'No se pudo cargar el panel.', 'error');
+  }
 })();

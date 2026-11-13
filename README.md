@@ -75,10 +75,14 @@ npm run test:smoke
 
 - Catálogo público con búsqueda por nombre.
 - Registro e inicio de sesión con sesiones.
-- Compra de productos por parte del cliente con validación de stock.
+- Checkout de clientes con método de pago simulado y datos de contacto y entrega guardados en la factura.
+- Facturas con formato imprimible y logo, disponibles después de comprar en la tienda y desde las listas de compras y ventas del panel administrativo.
+- Icono de usuario predeterminado junto a la cuenta en la tienda y el panel administrativo.
 - Panel administrativo para gestionar productos, compras y ventas.
 - Control de acceso por roles (`admin` y `cliente`).
-- Panel de base de datos con consola SQL de solo lectura.
+- Panel de base de datos con exploración, estructura, búsqueda, paginación, creación, edición, eliminación e importación/exportación CSV.
+- Consola SQL de solo lectura, limitada a consultas `SELECT` y sin acceso a hashes de contraseña.
+- Notificaciones y confirmaciones dentro de la interfaz, sin diálogos nativos del navegador.
 - Eliminación lógica de productos para preservar historial.
 - Operaciones transaccionales para compra y venta.
 
@@ -86,6 +90,9 @@ npm run test:smoke
 
 - Se usa SQLite con `sqlite3` y se envuelven las consultas en Promises para simplificar el flujo de datos.
 - El panel de base de datos requiere que el usuario haya accedido al panel administrativo en la misma sesión.
+- Las importaciones CSV se validan y se aplican en una transacción; los usuarios se administran desde su sección dedicada para no importar contraseñas o hashes.
+- Las facturas generadas desde la tienda conservan método de pago y datos del comprador; el pago es simulado y no solicita datos bancarios reales.
+- La vista previa de la factura usa una plantilla HTML imprimible, compartida entre la tienda y el panel administrativo.
 - El producto se elimina de forma lógica para no romper facturas históricas.
 - Las validaciones de stock se ejecutan en el servidor, y el mensaje exacto de error es `Inventario insuficiente` en caso de fallo.
 - El proyecto usa páginas HTML servidas por Express y JavaScript vanilla sin frameworks.

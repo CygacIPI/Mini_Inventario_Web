@@ -39,7 +39,18 @@
         <div class="db-toolbar">
           <select id="tabla-seleccionada"></select>
           <input id="buscador-tabla" type="search" placeholder="Buscar en tabla" />
+          <button id="btn-crear-registro" class="btn btn-primary" type="button">Nuevo registro</button>
+          <button id="btn-importar-csv" class="btn btn-secondary" type="button">Importar CSV</button>
+          <input id="archivo-csv" type="file" accept=".csv,text/csv" hidden />
           <button id="btn-exportar-csv" class="btn btn-primary">Exportar CSV</button>
+        </div>
+
+        <div class="db-table-heading">
+          <div>
+            <h1 id="titulo-tabla">Explorador de datos</h1>
+            <p id="detalle-tabla">Selecciona una tabla para consultar y administrar sus registros.</p>
+          </div>
+          <button id="btn-recargar-tabla" class="btn btn-outline" type="button">Actualizar</button>
         </div>
 
         <div class="db-table-wrap">
@@ -55,8 +66,19 @@
           <button id="btn-siguiente" class="btn btn-outline">Siguiente</button>
         </div>
 
+        <details class="structure-section">
+          <summary>Estructura de la tabla</summary>
+          <div class="db-table-wrap">
+            <table>
+              <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Requerido</th><th>Predeterminado</th></tr></thead>
+              <tbody id="estructura-tabla"></tbody>
+            </table>
+          </div>
+        </details>
+
         <section class="sql-section">
-          <h2>Consulta SQL (solo SELECT)</h2>
+          <h2>Consola SQL de lectura</h2>
+          <p>Consultas SELECT limitadas a 100 filas. Las modificaciones se realizan desde la tabla seleccionada.</p>
           <textarea id="sql-console" rows="6" placeholder="Ejemplo: SELECT * FROM productos LIMIT 20;"></textarea>
           <div class="button-row">
             <button id="btn-ejecutar-sql" class="btn btn-primary">Ejecutar</button>
@@ -94,6 +116,7 @@
       </section>
     </main>
 
+    <script src="/js/ui.js"></script>
     <script src="/js/panel_base_de_datos.js"></script>
   </body>
 </html>

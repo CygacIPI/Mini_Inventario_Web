@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dazi Solar | Inicio</title>
     <link rel="stylesheet" href="/css/tienda.css" />
+    <link rel="stylesheet" href="/css/facturas.css" />
     <link rel="shortcut icon" href="/img/273573898_666840584355364_4535223928352381621_n.jpg" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand-wrap">
-        <img src="/img/logo-dazi-solar.svg" alt="Logo Dazi Solar" class="brand-logo" />
-        <div>
-          <span class="brand-name">Dazi Solar</span>
-          <small>Energía para tu futuro</small>
-        </div>
+        <img src="/img/Logo_Horiz_DaziSolar_orig-Copy.svg" alt="Logo Dazi Solar" class="brand-logo" />
       </div>
 
       <nav class="nav-links">
@@ -24,6 +21,12 @@
       </nav>
 
       <div class="user-bar">
+        <span class="user-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="12" cy="8" r="4"></circle>
+            <path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path>
+          </svg>
+        </span>
         <span id="usuario-texto">Invitado</span>
         <button id="boton-login" class="btn btn-primary">Iniciar sesión</button>
         <button id="boton-panel-admin" class="btn btn-secondary hidden">Panel administrativo</button>
@@ -169,6 +172,41 @@
       </div>
     </div>
 
+    <div id="modal-checkout" class="modal hidden" aria-modal="true" role="dialog" aria-labelledby="checkout-title">
+      <section class="checkout-card">
+        <button class="close-modal" id="cerrar-checkout" type="button" aria-label="Cerrar">×</button>
+        <span class="eyebrow">Compra segura</span>
+        <h2 id="checkout-title">Completa tu compra</h2>
+        <div class="checkout-summary">
+          <strong id="checkout-producto"></strong>
+          <span id="checkout-cantidad"></span>
+          <strong id="checkout-total"></strong>
+        </div>
+        <form id="form-checkout" class="form-auth">
+          <label>Nombre completo<input type="text" name="nombre_cliente" required maxlength="100" autocomplete="name" /></label>
+          <div class="two-col">
+            <label>Correo electrónico<input type="email" name="email_cliente" required maxlength="150" autocomplete="email" /></label>
+            <label>Teléfono<input type="tel" name="telefono_cliente" required minlength="7" maxlength="40" autocomplete="tel" /></label>
+          </div>
+          <label>Dirección de entrega<textarea name="direccion_cliente" rows="2" required minlength="5" maxlength="250" autocomplete="street-address"></textarea></label>
+          <label>Método de pago
+            <select name="metodo_pago" required>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="tarjeta">Tarjeta (simulada)</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </label>
+          <div class="checkout-actions">
+            <button type="button" class="btn btn-outline" id="cancelar-checkout">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Confirmar compra</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <script src="/js/ui.js"></script>
+    <script src="/js/facturas.js"></script>
     <script src="/js/tienda.js"></script>
   </body>
 </html>

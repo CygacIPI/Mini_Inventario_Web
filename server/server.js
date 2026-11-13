@@ -112,7 +112,7 @@ app.use((err, _req, res, _next) => {
 });
 
 async function startServer() {
-  await initializeDatabase();
+  await app.locals.dbReady;
   return app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
   });

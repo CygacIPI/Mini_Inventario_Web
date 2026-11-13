@@ -121,6 +121,10 @@ async function initializeDatabase() {
       tipo_movimiento TEXT NOT NULL DEFAULT 'Salida' CHECK(tipo_movimiento = 'Salida'),
       id_usuario INTEGER NOT NULL,
       metodo_pago TEXT NOT NULL DEFAULT 'efectivo' CHECK(metodo_pago IN ('efectivo', 'transferencia', 'tarjeta', 'cheque')),
+      nombre_cliente TEXT NOT NULL DEFAULT '',
+      email_cliente TEXT NOT NULL DEFAULT '',
+      telefono_cliente TEXT NOT NULL DEFAULT '',
+      direccion_cliente TEXT NOT NULL DEFAULT '',
       FOREIGN KEY(id_producto) REFERENCES productos(id_producto),
       FOREIGN KEY(id_usuario) REFERENCES usuarios(id_usuario)
     )`,
@@ -156,6 +160,16 @@ async function initializeDatabase() {
     }
     if (!columnasVenta.some((columna) => columna.name === 'metodo_pago')) {
       await run('ALTER TABLE facturas_venta ADD COLUMN metodo_pago TEXT NOT NULL DEFAULT "efectivo"');
+    }
+    for (const [columna, tipo] of [
+      ['nombre_cliente', "TEXT NOT NULL DEFAULT ''"],
+      ['email_cliente', "TEXT NOT NULL DEFAULT ''"],
+      ['telefono_cliente', "TEXT NOT NULL DEFAULT ''"],
+      ['direccion_cliente', "TEXT NOT NULL DEFAULT ''"]
+    ]) {
+      if (!columnasVenta.some((existente) => existente.name === columna)) {
+        await run(`ALTER TABLE facturas_venta ADD COLUMN ${columna} ${tipo}`);
+      }
     }
     if (columnasCaja.length === 0) {
       await run('INSERT INTO caja (id, saldo_actual) VALUES (1, 0)');

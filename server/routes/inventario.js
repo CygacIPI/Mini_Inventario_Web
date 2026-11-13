@@ -237,6 +237,10 @@ router.post('/ventas', async (req, res) => {
     const cantidadVendida = Number(req.body.cantidad);
     const usuarioId = req.session.userId;
     const metodoPago = String(req.body.metodo_pago || 'efectivo').trim().toLowerCase();
+    const nombreCliente = String(req.body.nombre_cliente || req.usuario?.usuario || '').trim();
+    const emailCliente = String(req.body.email_cliente || '').trim();
+    const telefonoCliente = String(req.body.telefono_cliente || '').trim();
+    const direccionCliente = String(req.body.direccion_cliente || '').trim();
 
     if (!['efectivo', 'transferencia', 'tarjeta', 'cheque'].includes(metodoPago)) {
       return res.status(400).json({ error: 'El método de pago no es válido.' });
@@ -246,6 +250,16 @@ router.post('/ventas', async (req, res) => {
     }
     if (!Number.isInteger(cantidadVendida) || cantidadVendida <= 0) {
       return res.status(400).json({ error: 'La cantidad debe ser un entero mayor que 0.' });
+    }
+    if (req.usuario?.rol !== 'admin') {
+      if (!nombreCliente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailCliente) ||
+          telefonoCliente.length < 7 || direccionCliente.length < 5) {
+        return res.status(400).json({ error: 'Completa tu nombre, correo válido, teléfono y dirección de entrega.' });
+      }
+    }
+    if (nombreCliente.length > 100 || emailCliente.length > 150 ||
+        telefonoCliente.length > 40 || direccionCliente.length > 250) {
+      return res.status(400).json({ error: 'Los datos del comprador exceden la longitud permitida.' });
     }
     const producto = await get('SELECT * FROM productos WHERE id_producto = ? AND activo = 1', [idProducto]);
     if (!producto) {
@@ -267,8 +281,22 @@ router.post('/ventas', async (req, res) => {
 
     const resultado = await withTransaction(async () => {
       const factura = await run(
-        'INSERT INTO facturas_venta (id_producto, cantidad_vendida, precio_unitario, total_venta, id_usuario, metodo_pago) VALUES (?, ?, ?, ?, ?, ?)',
-        [idProducto, cantidadVendida, precioUnitario, totalVenta, usuarioId, metodoPago]
+        `INSERT INTO facturas_venta
+          (id_producto, cantidad_vendida, precio_unitario, total_venta, id_usuario, metodo_pago,
+           nombre_cliente, email_cliente, telefono_cliente, direccion_cliente)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          idProducto,
+          cantidadVendida,
+          precioUnitario,
+          totalVenta,
+          usuarioId,
+          metodoPago,
+          nombreCliente,
+          emailCliente,
+          telefonoCliente,
+          direccionCliente
+        ]
       );
 
       await run(
@@ -289,7 +317,25 @@ router.post('/ventas', async (req, res) => {
       return factura.lastID;
     });
 
-    return res.status(201).json({ mensaje: 'Venta registrada correctamente.', facturaId: resultado });
+    const fechaFactura = new Date().toISOString();
+    return res.status(201).json({
+      mensaje: 'Venta registrada correctamente.',
+      facturaId: resultado,
+      factura: {
+        id_factura: resultado,
+        fecha: fechaFactura,
+        nombre_producto: producto.nombre,
+        cantidad_vendida: cantidadVendida,
+        precio_unitario: precioUnitario,
+        total_venta: totalVenta,
+        id_usuario: usuarioId,
+        metodo_pago: metodoPago,
+        nombre_cliente: nombreCliente,
+        email_cliente: emailCliente,
+        telefono_cliente: telefonoCliente,
+        direccion_cliente: direccionCliente
+      }
+    });
   } catch (error) {
     return res.status(400).json({ error: error.message || 'No se pudo registrar la venta.' });
   }
@@ -319,7 +365,7 @@ router.get('/facturas-compra', requiereAdmin, async (req, res) => {
 router.get('/facturas-venta', requiereAdmin, async (req, res) => {
   const busqueda = String(req.query.q || '').trim();
   let sql = `
-    SELECT fv.*, p.nombre AS nombre_producto, u.usuario AS nombre_cliente
+    SELECT fv.*, p.nombre AS nombre_producto, u.usuario AS usuario_cuenta
     FROM facturas_venta fv
     LEFT JOIN productos p ON p.id_producto = fv.id_producto
     LEFT JOIN usuarios u ON u.id_usuario = fv.id_usuario
@@ -328,9 +374,13 @@ router.get('/facturas-venta', requiereAdmin, async (req, res) => {
   const params = [];
 
   if (busqueda) {
-    sql += ' AND (CAST(fv.id_factura AS TEXT) LIKE ? OR p.nombre LIKE ? OR u.usuario LIKE ? OR fv.metodo_pago LIKE ? OR DATE(fv.fecha) LIKE ?)';
+    sql += ` AND (
+      CAST(fv.id_factura AS TEXT) LIKE ? OR p.nombre LIKE ? OR u.usuario LIKE ? OR
+      fv.nombre_cliente LIKE ? OR fv.email_cliente LIKE ? OR fv.telefono_cliente LIKE ? OR
+      fv.direccion_cliente LIKE ? OR fv.metodo_pago LIKE ? OR DATE(fv.fecha) LIKE ?
+    )`;
     const valor = `%${busqueda}%`;
-    params.push(valor, valor, valor, valor, valor);
+    params.push(valor, valor, valor, valor, valor, valor, valor, valor, valor);
   }
 
   sql += ' ORDER BY fv.id_factura DESC';

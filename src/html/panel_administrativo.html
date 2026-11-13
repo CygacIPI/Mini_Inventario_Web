@@ -5,188 +5,172 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dazi Solar | Panel administrativo</title>
     <link rel="stylesheet" href="/css/panel_administrativo.css" />
+    <link rel="stylesheet" href="/css/facturas.css" />
     <link rel="shortcut icon" href="/img/273573898_666840584355364_4535223928352381621_n.jpg" />
   </head>
   <body>
-    <header class="admin-header">
-      <div class="brand-block">
-        <img src="/img/logo-dazi-solar.svg" alt="Logo Dazi Solar" class="brand-mini" />
-        <div>
-          <span class="brand-kicker">Dazi Solar</span>
-          <h1>Panel administrativo</h1>
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <a class="sidebar-brand" href="/"><img src="/img/Logo_Horiz_DaziSolar_orig-Copy.svg" alt="Dazi Solar" /></a>
+        <span class="sidebar-label">GESTIÓN</span>
+        <nav class="sidebar-nav" aria-label="Navegación administrativa">
+          <a class="active" href="#dashboard"><span>01</span> Dashboard</a>
+          <a href="#productos"><span>02</span> Productos</a>
+          <a href="#compras"><span>03</span> Compras</a>
+          <a href="#ventas"><span>04</span> Ventas</a>
+          <a href="#facturas"><span>05</span> Facturas</a>
+          <a href="#movimientos"><span>06</span> Movimientos</a>
+        </nav>
+        <div class="sidebar-footer">
+          <a href="/panel-base-de-datos">Base de datos</a>
+          <a href="/">Ir a la tienda</a>
         </div>
+      </aside>
+
+      <div class="admin-main">
+        <header class="admin-header">
+          <div>
+            <span class="brand-kicker">DAZI SOLAR / ADMINISTRACIÓN</span>
+            <h1>Dashboard</h1>
+          </div>
+          <div class="admin-actions">
+            <span class="user-avatar admin-avatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path>
+              </svg>
+            </span>
+            <span id="usuario-actual" class="user-pill">Admin</span>
+            <button id="cerrar-sesion" class="btn btn-secondary">Cerrar sesión</button>
+          </div>
+        </header>
+
+        <main class="admin-content">
+          <section id="dashboard" class="summary-grid" aria-label="Resumen del inventario">
+            <article class="summary-card">
+              <span class="summary-icon green">P</span>
+              <div><span>Productos activos</span><strong id="stat-productos">0</strong><small>Artículos en catálogo</small></div>
+            </article>
+            <article class="summary-card">
+              <span class="summary-icon yellow">I</span>
+              <div><span>Unidades en inventario</span><strong id="stat-stock">0</strong><small>Stock disponible</small></div>
+            </article>
+            <article class="summary-card">
+              <span class="summary-icon ink">V</span>
+              <div><span>Ventas registradas</span><strong id="stat-ventas">0</strong><small>Facturas de venta</small></div>
+            </article>
+            <article class="summary-card">
+              <span class="summary-icon green">RD</span>
+              <div><span>Saldo de caja</span><strong id="stat-caja">RD$0</strong><small>Balance actual</small></div>
+            </article>
+          </section>
+
+          <section class="dashboard-widgets">
+            <article class="panel onboarding-panel">
+              <div class="panel-header"><h2>Centro de operaciones</h2><span class="status-tag">En línea</span></div>
+              <p>Administra el catálogo, registra entradas de proveedores y controla tus ventas desde un solo lugar.</p>
+              <div class="onboarding-actions">
+                <a href="#productos" class="btn btn-primary">Administrar productos</a>
+                <a href="#compras" class="btn btn-outline">Registrar compra</a>
+              </div>
+            </article>
+            <article class="panel quick-panel">
+              <div class="panel-header"><h2>Accesos rápidos</h2></div>
+              <div class="quick-grid">
+                <a href="#productos"><span>P</span>Productos</a>
+                <a href="#compras"><span>C</span>Compra a proveedor</a>
+                <a href="#ventas"><span>V</span>Registrar venta</a>
+                <a href="/panel-base-de-datos"><span>BD</span>Base de datos</a>
+              </div>
+            </article>
+          </section>
+
+          <section id="productos" class="panel">
+            <div class="panel-header"><div><span class="section-kicker">CATÁLOGO</span><h2>Productos</h2></div></div>
+            <form id="form-producto" class="stack-form" enctype="multipart/form-data">
+              <input type="hidden" name="id_producto" />
+              <label>Nombre<input type="text" name="nombre" required /></label>
+              <label>Descripción<textarea name="descripcion" rows="3"></textarea></label>
+              <div class="two-col">
+                <label>Precio de compra<input type="number" name="precio_compra" min="0" step="0.01" required /></label>
+                <label>Precio de venta<input type="number" name="precio_venta" min="0" step="0.01" required /></label>
+              </div>
+              <div class="two-col">
+                <label>Stock<input type="number" name="stock_disponible" min="0" step="1" required /></label>
+                <label>Imagen<input type="file" name="imagen" accept="image/png,image/jpeg,image/webp" /></label>
+              </div>
+              <div class="button-row">
+                <button type="submit" class="btn btn-primary">Guardar producto</button>
+                <button type="button" class="btn btn-outline" id="reset-producto">Limpiar</button>
+              </div>
+            </form>
+            <div class="toolbar"><input type="search" id="search-productos" placeholder="Buscar producto" /></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ID</th><th>Nombre</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>
+                <tbody id="tabla-productos"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="compras" class="panel">
+            <div class="panel-header"><div><span class="section-kicker">INVENTARIO</span><h2>Compras a proveedores</h2></div></div>
+            <form id="form-compra" class="stack-form">
+              <label>Producto<select name="id_producto" required></select></label>
+              <label>Proveedor<input type="text" name="proveedor" placeholder="Ej. SolarPro RD" required /></label>
+              <div class="two-col">
+                <label>Cantidad<input type="number" name="cantidad_comprada" min="1" step="1" required /></label>
+                <label>Precio unitario<input type="number" name="precio_unitario" min="0" step="0.01" required /></label>
+              </div>
+              <label>Método de pago
+                <select name="metodo_pago"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="tarjeta">Tarjeta</option><option value="cheque">Cheque</option></select>
+              </label>
+              <button type="submit" class="btn btn-primary">Registrar compra</button>
+            </form>
+          </section>
+
+          <section id="ventas" class="panel">
+            <div class="panel-header"><div><span class="section-kicker">OPERACIONES</span><h2>Ventas</h2></div></div>
+            <form id="form-venta" class="stack-form">
+              <label>Producto<select name="id_producto" required></select></label>
+              <div class="two-col">
+                <label>Cantidad<input type="number" name="cantidad" min="1" step="1" required /></label>
+                <label>Precio unitario<input type="number" name="precio_unitario" min="0" step="0.01" required /></label>
+              </div>
+              <label>Método de pago
+                <select name="metodo_pago"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="tarjeta">Tarjeta</option><option value="cheque">Cheque</option></select>
+              </label>
+              <button type="submit" class="btn btn-primary">Registrar venta</button>
+            </form>
+          </section>
+
+          <section id="facturas" class="panel panel-wide">
+            <div class="panel-header"><div><span class="section-kicker">REGISTROS</span><h2>Facturas de compra</h2></div></div>
+            <div class="toolbar"><input type="search" id="search-facturas" placeholder="Buscar facturas de compra o venta" /><strong id="saldo-caja">Saldo: RD$0.00</strong></div>
+            <div class="table-wrap">
+              <table><thead><tr><th>ID</th><th>Producto</th><th>Proveedor</th><th>Cantidad</th><th>Precio unitario</th><th>Total</th><th>Método</th><th>Fecha</th><th>Factura</th></tr></thead><tbody id="listado-compras"></tbody></table>
+            </div>
+          </section>
+
+          <section class="panel panel-wide">
+            <div class="panel-header"><div><span class="section-kicker">REGISTROS</span><h2>Facturas de venta</h2></div></div>
+            <div class="table-wrap">
+              <table><thead><tr><th>ID</th><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Total</th><th>Cliente</th><th>Contacto</th><th>Dirección</th><th>Método</th><th>Fecha</th><th>Factura</th></tr></thead><tbody id="listado-ventas"></tbody></table>
+            </div>
+          </section>
+
+          <section id="movimientos" class="panel panel-wide">
+            <div class="panel-header"><div><span class="section-kicker">TRAZABILIDAD</span><h2>Movimientos de inventario</h2></div></div>
+            <div class="table-wrap">
+              <table><thead><tr><th>ID</th><th>Producto</th><th>Cantidad</th><th>Tipo</th><th>Origen</th><th>Fecha</th></tr></thead><tbody id="listado-movimientos"></tbody></table>
+            </div>
+          </section>
+        </main>
       </div>
-      <div class="admin-actions">
-        <span id="usuario-actual" class="user-pill">Admin</span>
-        <button id="cerrar-sesion" class="btn btn-secondary">Cerrar sesión</button>
-        <a href="/" class="btn btn-primary">Ir a la tienda</a>
-        <a href="/panel-base-de-datos" class="btn btn-secondary">Panel de BD</a>
-      </div>
-    </header>
+    </div>
 
-    <main class="admin-layout">
-      <section class="panel">
-        <div class="panel-header">
-          <h2>Productos</h2>
-        </div>
-        <form id="form-producto" class="stack-form" enctype="multipart/form-data">
-          <input type="hidden" name="id_producto" />
-          <label>Nombre<input type="text" name="nombre" required /></label>
-          <label>Descripción<textarea name="descripcion" rows="3"></textarea></label>
-          <div class="two-col">
-            <label>Precio compra<input type="number" name="precio_compra" min="0" step="0.01" required /></label>
-            <label>Precio venta<input type="number" name="precio_venta" min="0" step="0.01" required /></label>
-          </div>
-          <div class="two-col">
-            <label>Stock<input type="number" name="stock_disponible" min="0" step="1" required /></label>
-            <label>Imagen<input type="file" name="imagen" accept="image/png,image/jpeg,image/webp" /></label>
-          </div>
-          <div class="button-row">
-            <button type="submit" class="btn btn-primary">Guardar producto</button>
-            <button type="button" class="btn btn-outline" id="reset-producto">Limpiar</button>
-          </div>
-        </form>
-
-        <div class="toolbar">
-          <input type="search" id="search-productos" placeholder="Buscar producto" />
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Stock</th>
-                <th>Precio</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-productos"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <h2>Compras a proveedores</h2>
-        </div>
-        <form id="form-compra" class="stack-form">
-          <label>Producto
-            <select name="id_producto" required></select>
-          </label>
-          <label>Proveedor<input type="text" name="proveedor" placeholder="Ej. SolarPro RD" required /></label>
-          <div class="two-col">
-            <label>Cantidad<input type="number" name="cantidad_comprada" min="1" step="1" required /></label>
-            <label>Precio unitario<input type="number" name="precio_unitario" min="0" step="0.01" required /></label>
-          </div>
-          <label>Método de pago
-            <select name="metodo_pago">
-              <option value="efectivo">Efectivo</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="cheque">Cheque</option>
-            </select>
-          </label>
-          <button type="submit" class="btn btn-primary">Registrar compra</button>
-        </form>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <h2>Ventas</h2>
-        </div>
-        <form id="form-venta" class="stack-form">
-          <label>Producto
-            <select name="id_producto" required></select>
-          </label>
-          <div class="two-col">
-            <label>Cantidad<input type="number" name="cantidad" min="1" step="1" required /></label>
-            <label>Precio unitario<input type="number" name="precio_unitario" min="0" step="0.01" required /></label>
-          </div>
-          <label>Método de pago
-            <select name="metodo_pago">
-              <option value="efectivo">Efectivo</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="cheque">Cheque</option>
-            </select>
-          </label>
-          <button type="submit" class="btn btn-primary">Registrar venta</button>
-        </form>
-      </section>
-
-      <section class="panel panel-wide">
-        <div class="panel-header">
-          <h2>Facturas de compra</h2>
-        </div>
-        <div class="toolbar">
-          <input type="search" id="search-facturas" placeholder="Buscar facturas de compra o venta" />
-          <strong id="saldo-caja">Saldo: $0.00</strong>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Producto</th>
-                <th>Proveedor</th>
-                <th>Cantidad</th>
-                <th>Precio unitario</th>
-                <th>Total</th>
-                <th>Método</th>
-                <th>Fecha</th>
-              </tr>
-            </thead>
-            <tbody id="listado-compras"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel panel-wide">
-        <div class="panel-header">
-          <h2>Facturas de venta</h2>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio unitario</th>
-                <th>Total</th>
-                <th>Cliente</th>
-                <th>Método</th>
-                <th>Fecha</th>
-              </tr>
-            </thead>
-            <tbody id="listado-ventas"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel panel-wide">
-        <div class="panel-header">
-          <h2>Movimientos</h2>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Tipo</th>
-                <th>Origen</th>
-                <th>Fecha</th>
-              </tr>
-            </thead>
-            <tbody id="listado-movimientos"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
+    <script src="/js/ui.js"></script>
+    <script src="/js/facturas.js"></script>
     <script src="/js/panel_administrativo.js"></script>
   </body>
 </html>
