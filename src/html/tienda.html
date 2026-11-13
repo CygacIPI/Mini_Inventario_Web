@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dazi Solar | Inicio</title>
+    <link rel="stylesheet" href="/css/tienda.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand-wrap">
+        <img src="/img/logo-dazi-solar.svg" alt="Logo Dazi Solar" class="brand-logo" />
+        <div>
+          <span class="brand-name">Dazi Solar</span>
+          <small>Energía para tu futuro</small>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#inicio">Inicio</a>
+        <a href="#catalogo">Catálogo</a>
+        <a href="#video">Video</a>
+      </nav>
+
+      <div class="user-bar">
+        <span id="usuario-texto">Invitado</span>
+        <button id="boton-login" class="btn btn-primary">Iniciar sesión</button>
+        <button id="boton-panel-admin" class="btn btn-secondary hidden">Panel administrativo</button>
+      </div>
+    </header>
+
+    <main id="inicio">
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Soluciones sostenibles</span>
+          <h1>Potencia tu hogar con energía solar inteligente</h1>
+          <p>
+            Soluciones de energía renovable, almacenaje inteligente y mantenimiento profesional para hogares,
+            negocios y proyectos sostenibles.
+          </p>
+          <div class="hero-actions">
+            <a href="#catalogo" class="btn btn-primary">Ver catálogo</a>
+            <button id="boton-abrir-registro" class="btn btn-outline">Crear cuenta</button>
+          </div>
+        </div>
+
+        <div class="hero-metrics">
+          <div class="metric-card">
+            <strong>20+</strong>
+            <span>Años de experiencia</span>
+          </div>
+          <div class="metric-card">
+            <strong>4.9/5</strong>
+            <span>Clientes satisfechos</span>
+          </div>
+          <div class="metric-card">
+            <strong>98%</strong>
+            <span>Eficiencia garantizada</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="video" class="promo-video">
+        <h2>Video promocional</h2>
+        <video controls poster="/img/logo-dazi-solar.svg">
+          <source src="/img/vid_presentacion_Dazi-Solar.mp4" type="video/mp4" />
+          Tu navegador no soporta video HTML5.
+        </video>
+      </section>
+
+      <section id="catalogo" class="catalogo-section">
+        <div class="section-header">
+          <div>
+            <span class="eyebrow">Catálogo</span>
+            <h2>Productos Dazi Solar</h2>
+          </div>
+          <div class="search-box">
+            <input id="buscador-productos" type="search" placeholder="Buscar producto por nombre" />
+          </div>
+        </div>
+
+        <div id="mensaje-busqueda" class="helper-text"></div>
+        <div id="catalogo-productos" class="catalogo-grid"></div>
+      </section>
+    </main>
+
+    <div id="modal-auth" class="modal hidden" aria-modal="true" role="dialog">
+      <div class="modal-card">
+        <button class="close-modal" id="cerrar-modal" aria-label="Cerrar">×</button>
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+          <button class="auth-tab" data-tab="registro">Registrarse</button>
+        </div>
+
+        <form id="form-login" class="form-auth">
+          <label>
+            Usuario
+            <input type="text" name="usuario" required />
+          </label>
+          <label>
+            Contraseña
+            <input type="password" name="contrasena" required />
+          </label>
+          <button type="submit" class="btn btn-primary">Entrar</button>
+        </form>
+
+        <form id="form-registro" class="form-auth hidden">
+          <label>
+            Usuario
+            <input type="text" name="usuario" required minlength="4" maxlength="30" />
+          </label>
+          <label>
+            Contraseña
+            <input type="password" name="contrasena" required minlength="4" maxlength="80" />
+          </label>
+          <button type="submit" class="btn btn-primary">Crear cuenta</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="/js/tienda.js"></script>
+  </body>
+</html>

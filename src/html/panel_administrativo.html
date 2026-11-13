@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dazi Solar | Panel administrativo</title>
+    <link rel="stylesheet" href="/css/panel_administrativo.css" />
+  </head>
+  <body>
+    <header class="admin-header">
+      <div>
+        <h1>Panel administrativo</h1>
+        <p>Gestión del inventario Dazi Solar</p>
+      </div>
+      <div class="admin-actions">
+        <span id="usuario-actual">Admin</span>
+        <button id="cerrar-sesion" class="btn btn-secondary">Cerrar sesión</button>
+        <a href="/" class="btn btn-primary">Ir a la tienda</a>
+        <a href="/panel-base-de-datos" class="btn btn-secondary">Panel de BD</a>
+      </div>
+    </header>
+
+    <main class="admin-layout">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Productos</h2>
+        </div>
+        <form id="form-producto" class="stack-form" enctype="multipart/form-data">
+          <input type="hidden" name="id_producto" />
+          <label>Nombre<input type="text" name="nombre" required /></label>
+          <label>Descripción<textarea name="descripcion" rows="3"></textarea></label>
+          <div class="two-col">
+            <label>Precio compra<input type="number" name="precio_compra" min="0" step="0.01" required /></label>
+            <label>Precio venta<input type="number" name="precio_venta" min="0" step="0.01" required /></label>
+          </div>
+          <div class="two-col">
+            <label>Stock<input type="number" name="stock_disponible" min="0" step="1" required /></label>
+            <label>Imagen<input type="file" name="imagen" accept="image/png,image/jpeg,image/webp" /></label>
+          </div>
+          <div class="button-row">
+            <button type="submit" class="btn btn-primary">Guardar producto</button>
+            <button type="button" class="btn btn-outline" id="reset-producto">Limpiar</button>
+          </div>
+        </form>
+
+        <div class="toolbar">
+          <input type="search" id="search-productos" placeholder="Buscar producto" />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Stock</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-productos"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Compras</h2>
+        </div>
+        <form id="form-compra" class="stack-form">
+          <label>Producto
+            <select name="id_producto" required></select>
+          </label>
+          <div class="two-col">
+            <label>Cantidad<input type="number" name="cantidad_comprada" min="1" step="1" required /></label>
+            <label>Precio unitario<input type="number" name="precio_unitario" min="0" step="0.01" required /></label>
+          </div>
+          <button type="submit" class="btn btn-primary">Registrar compra</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Ventas</h2>
+        </div>
+        <form id="form-venta" class="stack-form">
+          <label>Producto
+            <select name="id_producto" required></select>
+          </label>
+          <div class="two-col">
+            <label>Cantidad<input type="number" name="cantidad" min="1" step="1" required /></label>
+            <label>Precio unitario<input type="number" name="precio_unitario" min="0" step="0.01" required /></label>
+          </div>
+          <button type="submit" class="btn btn-primary">Registrar venta</button>
+        </form>
+      </section>
+
+      <section class="panel panel-wide">
+        <div class="panel-header">
+          <h2>Facturas de compra</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Total</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="listado-compras"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel panel-wide">
+        <div class="panel-header">
+          <h2>Facturas de venta</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Total</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="listado-ventas"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel panel-wide">
+        <div class="panel-header">
+          <h2>Movimientos</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Tipo</th>
+                <th>Origen</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="listado-movimientos"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/js/panel_administrativo.js"></script>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+﻿<svg xmlns=""http://www.w3.org/2000/svg" width=""800"" height=""560"" viewBox=""0 0 800 560"">
+  <defs>
+    <linearGradient id=""bg"" x1=""0"" x2=""1"" y1=""0"" y2=""1"">
+      <stop offset=""0%"" stop-color=""#dfeeff""/>
+      <stop offset=""100%"" stop-color=""#f8f3d6""/>
+    </linearGradient>
+  </defs>
+  <rect width=""800"" height=""560"" fill=""url(#bg)""/>
+  <rect x=""70"" y=""150"" width=""660"" height=""260"" rx=""26"" fill=""#0c2340""/>
+  <g fill=""#f7b733"">
+    <rect x=""110"" y=""190"" width=""90"" height=""160"" rx=""10""/>
+    <rect x=""225"" y=""190"" width=""90"" height=""160"" rx=""10""/>
+    <rect x=""340"" y=""190"" width=""90"" height=""160"" rx=""10""/>
+    <rect x=""455"" y=""190"" width=""90"" height=""160"" rx=""10""/>
+    <rect x=""570"" y=""190"" width=""90"" height=""160"" rx=""10""/>
+  </g>
+  <path d=""M135 120 L665 120"" stroke=""#f97316"" stroke-width=""14"" stroke-linecap=""round""/>
+  <circle cx=""400"" cy=""120"" r=""32"" fill=""#f97316""/>
+  <text x=""400"" y=""430"" text-anchor=""middle"" font-family=""Arial, sans-serif"" font-size=""34"" font-weight=""700"" fill=""#0c2340"">Estructura Montaje</text>
+</svg>
